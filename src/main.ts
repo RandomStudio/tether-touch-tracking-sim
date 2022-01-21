@@ -1,4 +1,5 @@
-import { TetherAgent } from "tether-agent";
+import { Output, TetherAgent } from "tether-agent";
+import { encode } from "@msgpack/msgpack";
 import './style.scss'
 
 const agent = new TetherAgent("trackingSim");
@@ -10,6 +11,8 @@ const main = async(tetherHost: string | null) => {
   } catch(e) {
     console.error("Tether connect error:", e);
   }
+
+  const trackedObjects = await agent.createOutput("trackedObjects");
 
   const interactionArea = document.getElementById("interaction-area") as HTMLDivElement;
 
@@ -23,11 +26,14 @@ const main = async(tetherHost: string | null) => {
         interactionArea.appendChild(shadow);
   
         shadow.setPointerCapture(ev.pointerId);
+
+        sendTrackedObject(trackedObjects, ev.pointerId, ev.x, ev.y);
   
         shadow.addEventListener("pointermove", (ev) => {
           shadow.style.left = `${ev.x}px`;
           shadow.style.top = `${ev.y}px`;
-        });
+          sendTrackedObject(trackedObjects, ev.pointerId, ev.x, ev.y);
+          });
   
         shadow.addEventListener("pointerup", (_ev) => {
           interactionArea.removeChild(shadow);
@@ -39,6 +45,12 @@ const main = async(tetherHost: string | null) => {
 const urlParams = new URLSearchParams(window.location.search);
 const tetherHost = urlParams.get("tetherHost");
 
+const sendTrackedObject = (output: Output, id: number, x: number, y: number) =>  {
+  const m = {
+    id, x, y
+  };
+  output.publish(encode(m));
+}
 
 window.onload = () => { main(tetherHost); }
 
