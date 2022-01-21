@@ -1,0 +1,26 @@
+body {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  color: hsl(210, 29%, 24%);
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: smaller;
+  padding: 16px;
+  z-index: 1;
+  color: white;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+
+div#interaction-area {
+  z-index: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: blue;
+}
