@@ -25,6 +25,7 @@ div#interaction-area {
   width: 100vw;
   height: 100vh;
   background-color: blue;
+  touch-action: none;
   .shadow {
     border-radius: 50%;
     position: absolute;
