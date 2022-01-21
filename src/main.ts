@@ -1,27 +1,44 @@
+import { TetherAgent } from "tether-agent";
 import './style.scss'
 
-console.log("start");
+const agent = new TetherAgent("trackingSim");
 
-const interactionArea = document.getElementById("interaction-area") as HTMLDivElement;
+const main = async(tetherHost: string | null) => {
+  console.log("Connect Tether @ ", tetherHost, "...");
+  try {
+    await agent.connect({ protocol: "ws", host: tetherHost || undefined, port: 15675, path: "/ws"}, false);
+  } catch(e) {
+    console.error("Tether connect error:", e);
+  }
 
-if (interactionArea) {
-  interactionArea.addEventListener("pointerdown", (ev) => {
-    const shadow = document.createElement("div");
-      shadow.classList.add("shadow");
-      shadow.style.left = `${ev.x}px`;
-      shadow.style.top = `${ev.y}px`;
+  const interactionArea = document.getElementById("interaction-area") as HTMLDivElement;
 
-      interactionArea.appendChild(shadow);
-
-      shadow.setPointerCapture(ev.pointerId);
-
-      shadow.addEventListener("pointermove", (ev) => {
+  if (interactionArea) {
+    interactionArea.addEventListener("pointerdown", (ev) => {
+      const shadow = document.createElement("div");
+        shadow.classList.add("shadow");
         shadow.style.left = `${ev.x}px`;
         shadow.style.top = `${ev.y}px`;
-      });
-
-      shadow.addEventListener("pointerup", (_ev) => {
-        interactionArea.removeChild(shadow);
-      });
-  })
+  
+        interactionArea.appendChild(shadow);
+  
+        shadow.setPointerCapture(ev.pointerId);
+  
+        shadow.addEventListener("pointermove", (ev) => {
+          shadow.style.left = `${ev.x}px`;
+          shadow.style.top = `${ev.y}px`;
+        });
+  
+        shadow.addEventListener("pointerup", (_ev) => {
+          interactionArea.removeChild(shadow);
+        });
+    })
+  }
 }
+
+const urlParams = new URLSearchParams(window.location.search);
+const tetherHost = urlParams.get("tetherHost");
+
+
+window.onload = () => { main(tetherHost); }
+
