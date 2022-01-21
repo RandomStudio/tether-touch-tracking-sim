@@ -14,6 +14,7 @@
     "vite": "^2.7.2"
   },
   "dependencies": {
+    "@anselan/maprange": "^0.8.0",
     "@msgpack/msgpack": "^2.7.1",
     "tether-agent": "^2.3.1"
   }
