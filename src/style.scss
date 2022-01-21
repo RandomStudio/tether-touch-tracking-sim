@@ -15,6 +15,8 @@ h1 {
   right: 0;
 }
 
+$shadow-size: 10vw;
+
 div#interaction-area {
   z-index: 0;
   position: absolute;
@@ -23,4 +25,12 @@ div#interaction-area {
   width: 100vw;
   height: 100vh;
   background-color: blue;
+  .shadow {
+    border-radius: 50%;
+    position: absolute;
+    width: $shadow-size;
+    height: $shadow-size;
+    transform: translate(-50%, -50%);
+    background-color: green;
+  }
 }
