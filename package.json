@@ -2,11 +2,13 @@
   "name": "tether-touch-tracking-sim",
   "version": "0.0.0",
   "scripts": {
+    "start": "npm run build && npm run preview",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/node": "^17.0.12",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.4.0",
     "sass": "^1.49.0",
@@ -16,6 +18,6 @@
   "dependencies": {
     "@anselan/maprange": "^0.8.0",
     "@msgpack/msgpack": "^2.7.1",
-    "tether-agent": "^2.3.1"
+    "@tether/tether-agent": "^2.3.1"
   }
 }

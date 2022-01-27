@@ -60,7 +60,7 @@ const sendTrackedObject = (output: Output, id: number, inX: number, inY: number,
   const m = {
     id, position: {x, y}
   };
-  output.publish(encode(m));
+  output.publish(Buffer.from(encode(m)));
 }
 
 window.onload = () => { main(tetherHost, { w: window.innerWidth, h: window.innerHeight}); }
