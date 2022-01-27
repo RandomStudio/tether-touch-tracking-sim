@@ -10,16 +10,17 @@ interface IDimensions {
   h: number;
 }
 
-interface ActivePoint {
-  pointerId: number;
-  x: number;
-  y: number;
-}
-
 const main = async(tetherHost: string | null, dimensions: IDimensions) => {
+
+  const statusEl = document.getElementById("status");
+  if(statusEl) {
+    statusEl.innerText = `Connecting Tether @ ${tetherHost}...`;
+  }
+
   console.log("Connect Tether @ ", tetherHost, "...");
   try {
     await agent.connect({ protocol: "ws", host: tetherHost || undefined, port: 15675, path: "/ws"}, false);
+    if (statusEl) { statusEl.innerText = `Connected OK @ ${tetherHost}`; }
   } catch(e) {
     console.error("Tether connect error:", e);
   }

@@ -5,14 +5,22 @@ body {
   padding: 0;
 }
 
-h1 {
-  font-size: smaller;
-  padding: 16px;
+.overlay {
   z-index: 1;
-  color: white;
-  position: absolute;
+  position: fixed;
   bottom: 0;
   right: 0;
+  padding: 16px;
+  h1 {
+    padding: 0;   
+    font-size: smaller;
+    z-index: 1;
+    color: white;
+  }
+  code {
+    color: grey; 
+    text-align: right; 
+  }
 }
 
 $shadow-size: 20vw;
