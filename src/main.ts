@@ -1,4 +1,4 @@
-import { Output, TetherAgent } from "tether-agent";
+import { Output, TetherAgent } from "@tether/tether-agent";
 import { encode } from "@msgpack/msgpack";
 import { remap} from "@anselan/maprange";
 import './style.scss'
@@ -8,6 +8,12 @@ const agent = new TetherAgent("trackingSim");
 interface IDimensions {
   w: number;
   h: number;
+}
+
+interface ActivePoint {
+  pointerId: number;
+  x: number;
+  y: number;
 }
 
 const main = async(tetherHost: string | null, dimensions: IDimensions) => {
@@ -23,6 +29,7 @@ const main = async(tetherHost: string | null, dimensions: IDimensions) => {
   const interactionArea = document.getElementById("interaction-area") as HTMLDivElement;
 
   if (interactionArea) {
+
     interactionArea.addEventListener("pointerdown", (ev) => {
       const shadow = document.createElement("div");
         shadow.classList.add("shadow");
@@ -30,10 +37,12 @@ const main = async(tetherHost: string | null, dimensions: IDimensions) => {
         shadow.style.top = `${ev.y}px`;
   
         interactionArea.appendChild(shadow);
+        shadow.innerText = ev.pointerId.toString();
   
         shadow.setPointerCapture(ev.pointerId);
 
-        sendTrackedObject(trackedObjects, ev.pointerId, ev.x, ev.y, dimensions);
+        const { x, y, pointerId} = ev;
+        sendTrackedObject(trackedObjects, pointerId, x, y, dimensions);
   
         shadow.addEventListener("pointermove", (ev) => {
           shadow.style.left = `${ev.x}px`;
@@ -41,10 +50,12 @@ const main = async(tetherHost: string | null, dimensions: IDimensions) => {
           sendTrackedObject(trackedObjects, ev.pointerId, ev.x, ev.y, dimensions);
           });
   
-        shadow.addEventListener("pointerup", (_ev) => {
+        shadow.addEventListener("pointerup", (ev) => {
           interactionArea.removeChild(shadow);
         });
     })
+
+    
   }
 }
 
@@ -60,7 +71,7 @@ const sendTrackedObject = (output: Output, id: number, inX: number, inY: number,
   const m = {
     id, position: {x, y}
   };
-  output.publish(Buffer.from(encode(m)));
+  output.publish(encode(m));
 }
 
 window.onload = () => { main(tetherHost, { w: window.innerWidth, h: window.innerHeight}); }

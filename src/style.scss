@@ -15,7 +15,7 @@ h1 {
   right: 0;
 }
 
-$shadow-size: 10vw;
+$shadow-size: 20vw;
 
 div#interaction-area {
   z-index: 0;
@@ -33,5 +33,7 @@ div#interaction-area {
     height: $shadow-size;
     transform: translate(-50%, -50%);
     background-color: green;
+    font-weight: bold;
+    color: white;
   }
 }
