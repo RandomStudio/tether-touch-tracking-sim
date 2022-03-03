@@ -26,6 +26,7 @@ body {
 $shadow-size: 20vw;
 
 div#interaction-area {
+  overflow: hidden;
   z-index: 0;
   position: absolute;
   top: 0;

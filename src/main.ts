@@ -3,29 +3,29 @@ import { encode } from "@msgpack/msgpack";
 import { remap} from "@anselan/maprange";
 import './style.scss'
 
-const agent = new TetherAgent("trackingSim");
 
 interface IDimensions {
   w: number;
   h: number;
 }
 
-const main = async(tetherHost: string | null, screen: IDimensions, outputDimensions: IDimensions) => {
+export interface TrackedPoint2D {
+  id: number;
+  size?: number;
+  x: number;
+  y: number;
+}
+
+const main = async(agent: TetherAgent, screen: IDimensions, outputDimensions: IDimensions) => {
+
+
 
   const statusEl = document.getElementById("status");
   if(statusEl) {
     statusEl.innerText = `Connecting Tether @ ${tetherHost}...`;
   }
 
-  console.log("Connect Tether @ ", tetherHost, "...");
-  try {
-    await agent.connect({ protocol: "ws", host: tetherHost || undefined, port: 15675, path: "/ws"}, false);
-    if (statusEl) { statusEl.innerText = `Connected OK @ ${tetherHost}`; }
-  } catch(e) {
-    console.error("Tether connect error:", e);
-  }
-
-  const trackedObjects = await agent.createOutput("trackedPoints");
+  const trackedObjects = agent.createOutput("trackedPoints");
 
   const interactionArea = document.getElementById("interaction-area") as HTMLDivElement;
 
@@ -76,12 +76,21 @@ const sendTrackedObject = (
     remap(y, [0, inputDimensions.h], [0,outputDimensions.h])
   ];
 
-  const m = {
-    id, position: {x: newX, y: newY}
-  };
-  // @ts-ignore
+  const m: TrackedPoint2D[] = [{
+    id, x: newX, y: newY
+  }];
   output.publish(encode(m));
-  // TODO: Tether Agent should accept UInt8Array from browser?
+}
+
+const connect = async(tetherHost: string | null, parsedOutputDimensions: IDimensions) => {
+  console.log("Connect Tether @ ", tetherHost, "...");
+
+  const agent = await TetherAgent.create("trackingSim", { protocol: "ws", host: tetherHost || undefined, port: 15675, path: "/ws"});
+  main(
+    agent,
+    { w: window.innerWidth, h: window.innerHeight},
+    parsedOutputDimensions
+  ); 
 }
 
 window.onload = () => { 
@@ -91,11 +100,7 @@ window.onload = () => {
       w: parseFloat(w),h: parseFloat(h)
     }
     console.log({ parsedOutputDimensions});
-    main(
-      tetherHost, 
-      { w: window.innerWidth, h: window.innerHeight},
-      parsedOutputDimensions
-    ); 
+    connect(tetherHost, parsedOutputDimensions);
   } else {
     throw Error("no output dimensions provided");
   }
