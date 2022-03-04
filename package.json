@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@types/node": "^17.0.16",
+    "prettier": "^2.5.1",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-globals": "^1.4.0",
     "sass": "^1.49.0",
