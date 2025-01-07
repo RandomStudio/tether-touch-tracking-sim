@@ -177,6 +177,19 @@
     }}
   ></div>
 
+  {#if inputDimensions}
+    <div
+      class="origin-marker"
+      style:left={(originMode === OriginMode.TOP_LEFT
+        ? "0"
+        : inputDimensions[0] / 2) + "px"}
+      style:top={(originMode.includes("TOP") ? "0" : inputDimensions[1] / 2) +
+        "px"}
+    >
+      <div>+</div>
+    </div>
+  {/if}
+
   {#each shadows as shadow}
     <div transition:fade>
       <Shadow
@@ -206,6 +219,8 @@
   }
 
   .hud {
+    pointer-events: none;
+
     z-index: 1;
     position: absolute;
     top: 0;
@@ -224,5 +239,27 @@
     height: 100vh;
     background-color: blue;
     touch-action: none;
+  }
+
+  .origin-marker {
+    opacity: 0.75;
+    pointer-events: none;
+    z-index: 2;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border: 1px dotted yellow;
+    transform: translate(-50%, -50%);
+    font-size: xx-large;
+    color: yellow;
+  }
+
+  .origin-marker div {
+    /* border: 1px solid gray; */
+    font-size: xx-large;
+    color: yellow;
   }
 </style>
