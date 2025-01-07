@@ -1,8 +1,23 @@
 # Tether (multi)touch tracking simulator
 
-By default, launches server at port :8080
+## Quick Start
 
-Optional URL SearchParams:
+```
+npm install
+npm run dev
+```
+
+Or, for a more optimised build:
+
+```
+npm run preview
+```
+
+By default, launches server at port :8080 - in `dev` or `preview` modes
+
+## URL SearchParams
+
+For example, http://localhost:8080/?dimensions=2000,2000&origin=CENTRE_CENTRE
 
 - `tetherHost`: Specify where the MQTT Broker is; otherwise, falls back to assuming the same host as the web page
 - `dimensions`: Specify the output dimensions
