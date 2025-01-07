@@ -1,3 +1,9 @@
-# Tether (multi)touch tracking simulator 2
+# Tether (multi)touch tracking simulator
 
-## TODO: Provide different modes for range mapping, especially "centre+centre" where origin [0,0] is at the center of the rect/screen
+By default, launches server at port :8080
+
+Optional URL SearchParams:
+
+- `tetherHost`: Specify where the MQTT Broker is; otherwise, falls back to assuming the same host as the web page
+- `dimensions`: Specify the output dimensions
+- `origin`: Specify the origin mode, either TOP_LEFT, TOP_CENTRE or CENTRE_CENTER (default)
