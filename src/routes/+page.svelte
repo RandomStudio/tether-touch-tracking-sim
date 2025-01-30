@@ -19,15 +19,15 @@
   }
 
   const OriginMode = {
-    TOP_LEFT: "TOP_LEFT",
-    TOP_CENTRE: "TOP_CENTRE",
-    CENTRE_CENTRE: "CENTRE_CENTRE",
+    CORNER: "CORNER",
+    CLOSE_CENTRE: "CLOSE_CENTRE",
+    CENTRE: "CENTRE",
   } as const;
   type OriginModeEnum = (typeof OriginMode)[keyof typeof OriginMode];
 
   let index = $state(0);
 
-  let originMode: OriginModeEnum = $state(OriginMode.CENTRE_CENTRE);
+  let originMode: OriginModeEnum = $state(OriginMode.CENTRE);
   let outputDimensions: null | [number, number] = $state(null);
   let inputDimensions: null | [number, number] = $state(null);
 
@@ -44,7 +44,7 @@
     }
     const [inX, inY] = inC;
     switch (originMode) {
-      case "TOP_LEFT": {
+      case "CORNER": {
         const [x, y] = remapCoords(
           [inX, inY],
           inputDimensions,
@@ -52,17 +52,17 @@
         );
         return [x, y];
       }
-      case "TOP_CENTRE": {
+      case "CLOSE_CENTRE": {
         return [
           remap(
             inX,
             [0, inputDimensions[0]],
-            [-outputDimensions[0] / 2, outputDimensions[0] / 2]
+            [outputDimensions[0] / 2, -outputDimensions[0] / 2]
           ),
           remap(inY, [0, inputDimensions[1]], [0, outputDimensions[1]]),
         ];
       }
-      case "CENTRE_CENTRE": {
+      case "CENTRE": {
         return [
           remap(
             inX,
@@ -72,7 +72,7 @@
           remap(
             inY,
             [0, inputDimensions[1]],
-            [-outputDimensions[1] / 2, outputDimensions[1] / 2]
+            [outputDimensions[1] / 2, -outputDimensions[1] / 2]
           ),
         ];
       }
@@ -81,13 +81,23 @@
 
   const toDegrees = (radians: number): number => (radians * 180) / Math.PI;
 
-  const angleFromAxisX = (x: number, y: number): number => Math.atan2(y, x);
+  const getHeading = (x: number, y: number): number => {
+    const angle_rad = Math.atan2(y, x);
+    const angle_deg = toDegrees(angle_rad);
+
+    const heading = (90 - angle_deg) % 360;
+    if (heading < 0) {
+      return heading + 360;
+    } else {
+      return heading;
+    }
+  };
 
   const publishUpdate = () => {
     const trackedPoints = shadows.map((shadow) => {
       if (inputDimensions && outputDimensions) {
         const [x, y] = remapCoordsFromOrigin([shadow.x, shadow.y]);
-        const angle = angleFromAxisX(x, y);
+        const angle = getHeading(x, y);
         const trackedPoint: TrackedPoint = {
           id: shadow.uuid,
           x,
@@ -185,7 +195,7 @@
   {#if inputDimensions}
     <div
       class="origin-marker"
-      style:left={(originMode === OriginMode.TOP_LEFT
+      style:left={(originMode === OriginMode.CORNER
         ? "0"
         : inputDimensions[0] / 2) + "px"}
       style:top={(originMode.includes("TOP") ? "0" : inputDimensions[1] / 2) +
