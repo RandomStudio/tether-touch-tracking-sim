@@ -79,15 +79,20 @@
     }
   };
 
+  const toDegrees = (radians: number): number => (radians * 180) / Math.PI;
+
+  const angleFromAxisX = (x: number, y: number): number => Math.atan2(y, x);
+
   const publishUpdate = () => {
     const trackedPoints = shadows.map((shadow) => {
       if (inputDimensions && outputDimensions) {
         const [x, y] = remapCoordsFromOrigin([shadow.x, shadow.y]);
+        const angle = angleFromAxisX(x, y);
         const trackedPoint: TrackedPoint = {
           id: shadow.uuid,
           x,
           y,
-          velocity: [0, 0],
+          angle,
         };
         return trackedPoint;
       }
@@ -115,7 +120,7 @@
     });
 
     // Also set up the Output Plug now...
-    outputPlug = new OutputPlug(agent, "smoothedRemappedPoints");
+    outputPlug = new OutputPlug(agent, "smoothedTrackedPoints");
 
     // Output dimensions set up via searchParams, or fall back to defaults...
     const dimensionsParams = params.get("dimensions");
