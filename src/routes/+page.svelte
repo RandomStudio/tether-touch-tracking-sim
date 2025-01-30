@@ -97,12 +97,12 @@
     const trackedPoints = shadows.map((shadow) => {
       if (inputDimensions && outputDimensions) {
         const [x, y] = remapCoordsFromOrigin([shadow.x, shadow.y]);
-        const angle = getHeading(x, y);
+        const heading = getHeading(x, y);
         const trackedPoint: TrackedPoint = {
           id: shadow.uuid,
           x,
           y,
-          angle,
+          heading,
         };
         return trackedPoint;
       }

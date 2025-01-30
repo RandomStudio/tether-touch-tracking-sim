@@ -3,5 +3,5 @@ export interface TrackedPoint {
   x: number;
   y: number;
   velocity?: [number, number];
-  angle?: number;
+  heading?: number;
 }
