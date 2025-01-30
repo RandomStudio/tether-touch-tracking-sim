@@ -10,6 +10,7 @@
   } from "tether-agent";
   import { type TrackedPoint } from "$lib/types";
   import { remap, remapCoords } from "@anselan/maprange";
+  import { getBearing, getRangeFromOrigin } from "$lib";
 
   interface ShadowObject {
     uuid: number;
@@ -32,8 +33,9 @@
   let inputDimensions: null | [number, number] = $state(null);
 
   let shadows: ShadowObject[] = $state([]);
+  let outputPoints: TrackedPoint[] = $state([]);
 
-  let interactionElement: HTMLDivElement;
+  let interactionElement: HTMLDivElement | null = $state(null);
 
   let agent: TetherAgent | null = $state(null);
   let outputPlug: OutputPlug | null = $state(null);
@@ -79,43 +81,31 @@
     }
   };
 
-  const toDegrees = (radians: number): number => (radians * 180) / Math.PI;
-
-  const getHeading = (x: number, y: number): number => {
-    const angle_rad = Math.atan2(y, x);
-    const angle_deg = toDegrees(angle_rad);
-
-    const heading = (90 - angle_deg) % 360;
-    if (heading < 0) {
-      return heading + 360;
-    } else {
-      return heading;
-    }
-  };
-
   const publishUpdate = () => {
-    const trackedPoints = shadows.map((shadow) => {
-      if (inputDimensions && outputDimensions) {
+    if (inputDimensions && outputDimensions) {
+      outputPoints = shadows.map((shadow) => {
         const [x, y] = remapCoordsFromOrigin([shadow.x, shadow.y]);
-        const heading = getHeading(x, y);
+        const bearing = getBearing(x, y);
+        const range = getRangeFromOrigin(x, y);
         const trackedPoint: TrackedPoint = {
           id: shadow.uuid,
           x,
           y,
-          heading,
+          bearing,
+          range,
         };
         return trackedPoint;
+      });
+      if (outputPlug) {
+        outputPlug.publish(encode(outputPoints));
       }
-    });
-    if (outputPlug) {
-      outputPlug.publish(encode(trackedPoints));
     }
   };
 
   onMount(async () => {
     // Input dimensions by window pixel size on mount...
     // (Careful: browser zoom level can mess this up a bit)
-    inputDimensions = [window.innerWidth, window.innerHeight];
+    inputDimensions = [window.innerWidth, window.innerWidth];
 
     // Some things defined (optionally) via searchParams...
     const params = new URL(document.location.toString()).searchParams;
@@ -143,7 +133,7 @@
       console.warn(
         "No output dimensions provided through params dimensions?=width,height; use defaults"
       );
-      outputDimensions = [2000, 2000];
+      outputDimensions = [5000, 5000];
     }
 
     // Origin mode switched via searchParams if specified
@@ -170,27 +160,31 @@
       <h2>Origin Mode: {originMode}</h2>
     {/if}
     <div>
-      {JSON.stringify(shadows)}
+      Points: {shadows.length} to {outputPoints.length} output
     </div>
   </div>
 
-  <div
-    bind:this={interactionElement}
-    class="interaction-area"
-    onpointerdown={(ev) => {
-      const { x, y, pointerId } = ev;
-      shadows = [
-        ...shadows,
-        {
-          uuid: index,
-          pointerId,
-          x,
-          y,
-        },
-      ];
-      index++;
-    }}
-  ></div>
+  {#if inputDimensions}
+    <div
+      bind:this={interactionElement}
+      class="interaction-area"
+      style:width={inputDimensions[0] + "px"}
+      style:height={inputDimensions[1] + "px"}
+      onpointerdown={(ev) => {
+        const { x, y, pointerId } = ev;
+        shadows = [
+          ...shadows,
+          {
+            uuid: index,
+            pointerId,
+            x,
+            y,
+          },
+        ];
+        index++;
+      }}
+    ></div>
+  {/if}
 
   {#if inputDimensions}
     <div
@@ -238,9 +232,9 @@
 
     z-index: 1;
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 0;
-    color: white;
+    color: gray;
     padding: 1em;
   }
 
@@ -250,9 +244,9 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
     background-color: blue;
+    border: 2px solid red;
+    box-sizing: border-box;
     touch-action: none;
   }
 
