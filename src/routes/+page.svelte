@@ -81,6 +81,15 @@
     }
   };
 
+  const deleteShadow = (uuid:number) => {
+    console.log("Deleting: ", uuid);
+    shadows = [...shadows.filter((s) => s.uuid !== uuid)];
+  }
+
+  const roundValue = (value: number) => {
+    return Math.round(value * 100) / 100;
+  }
+
   const publishUpdate = () => {
     if (inputDimensions && outputDimensions) {
       outputPoints = shadows.map((shadow) => {
@@ -89,10 +98,10 @@
         const range = getRangeFromOrigin(x, y);
         const trackedPoint: TrackedPoint = {
           id: shadow.uuid,
-          x,
-          y,
-          bearing,
-          range,
+          x: roundValue(x),
+          y: roundValue(y),
+          bearing: roundValue(bearing),
+          range: roundValue(range),
         };
         return trackedPoint;
       });
@@ -105,7 +114,14 @@
   onMount(async () => {
     // Input dimensions by window pixel size on mount...
     // (Careful: browser zoom level can mess this up a bit)
-    inputDimensions = [window.innerWidth, window.innerWidth];
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    if (width>height) {
+      width = Math.round(1.4 * height);
+    } else {
+      height = Math.round(width / 1.4);
+    }
+    inputDimensions = [width, height];
 
     // Some things defined (optionally) via searchParams...
     const params = new URL(document.location.toString()).searchParams;
@@ -133,10 +149,10 @@
       console.warn(
         "No output dimensions provided through params dimensions?=width,height; use defaults"
       );
-      outputDimensions = [5000, 5000];
+      outputDimensions = [7, 5];
     }
 
-    // Origin mode switched via searchParams if specified
+    // Origin mode switched via searchParams if specified (default to "CENTRE")
     const originModeParams = params.get("origin");
     if (originModeParams) {
       originMode = originModeParams as OriginModeEnum;
@@ -147,6 +163,20 @@
 <svelte:head>
   <title>Tracking Simulation</title>
 </svelte:head>
+
+{#if shadows.length > 0}
+<div class="delete-area">
+  {#each shadows as shadow (shadow.uuid)}
+  <div in:fade out:fade>
+    <button class="delete-btn" onclick={() => deleteShadow(shadow.uuid)}>
+      {shadow.uuid}
+    </button>
+    <br />
+    <br />
+  </div>
+  {/each}
+</div>
+{/if}
 
 <div class="container">
   <div class="hud">
@@ -199,22 +229,20 @@
     </div>
   {/if}
 
-  {#each shadows as shadow}
+  {#each shadows as shadow (shadow.uuid)}
     <div transition:fade>
       <Shadow
         uuid={shadow.uuid}
         pointerId={shadow.pointerId}
         initX={shadow.x}
         initY={shadow.y}
-        onPointerUp={(uuid) => {
-          console.log("should remove", { uuid });
-          shadows = [...shadows.filter((s) => s.uuid !== uuid)];
-          publishUpdate();
+        onPointerUp={async () => {
+          await publishUpdate();
         }}
-        onPointerMove={(x, y) => {
+        onPointerMove={async (x, y) => {
           shadow.x = x;
           shadow.y = y;
-          publishUpdate();
+          await publishUpdate();
         }}
       />
     </div>
@@ -229,7 +257,6 @@
 
   .hud {
     pointer-events: none;
-
     z-index: 1;
     position: absolute;
     bottom: 0;
@@ -270,5 +297,25 @@
     /* border: 1px solid gray; */
     font-size: xx-large;
     color: yellow;
+  }
+
+  .delete-btn {
+    cursor: pointer;
+    background-color: rgb(210, 210, 210);
+    border: black 1px solid;
+    padding: 0.5em;
+    font-size: large;
+    cursor: pointer;
+  }
+
+  .delete-area {
+    max-height: 95vh;
+    overflow: auto;
+    position: fixed;
+    top: 5px;
+    right: 5px;
+    z-index: 1;
+    padding: 0.5em;
+    font-size: large;
   }
 </style>

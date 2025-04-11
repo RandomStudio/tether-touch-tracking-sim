@@ -61,11 +61,12 @@
 
 <style>
 	.shadow {
+		z-index: 10;
 		border-radius: 50%;
 		position: absolute;
 		display: inline-block;
-		width: 15vw;
-		height: 15vw;
+		width: 7vw;
+		height: 7vw;
 		transform: translate(-50%, -50%);
 		background-color: green;
 		font-weight: bold;
