@@ -40,6 +40,8 @@
   let agent: TetherAgent | null = $state(null);
   let outputPlug: OutputPlug | null = $state(null);
 
+  let mode: string | null = $state("mouse");
+
   const remapCoordsFromOrigin = (inC: [number, number]): [number, number] => {
     if (!inputDimensions || !outputDimensions) {
       throw Error("input and/or output dimensions not set");
@@ -86,8 +88,8 @@
     shadows = [...shadows.filter((s) => s.uuid !== uuid)];
   }
 
-  const roundValue = (value: number) => {
-    return Math.round(value * 100) / 100;
+  const roundValue = (value: number, digits:number) => {
+    return Math.round(value * (10**digits)) / (10**digits);
   }
 
   const publishUpdate = () => {
@@ -98,10 +100,10 @@
         const range = getRangeFromOrigin(x, y);
         const trackedPoint: TrackedPoint = {
           id: shadow.uuid,
-          x: roundValue(x),
-          y: roundValue(y),
-          bearing: roundValue(bearing),
-          range: roundValue(range),
+          x: roundValue(x, 2),
+          y: roundValue(y, 2),
+          bearing: roundValue(bearing, 2),
+          range: roundValue(range, 2),
         };
         return trackedPoint;
       });
@@ -125,7 +127,15 @@
 
     // Some things defined (optionally) via searchParams...
     const params = new URL(document.location.toString()).searchParams;
-
+    mode = params.get("mode");
+    if ((mode == "touch") || (mode == "mouse")) {
+      console.log("Using mode: ", mode);
+    }
+    else {
+      console.warn("No valid mode specified, defaulting to mouse");
+      mode = "mouse";
+    }
+    
     // Set up Tether agent using either the searchParams or current URL...
     const tetherHostParams = params.get("tetherHost");
     agent = await TetherAgent.create("displays", {
@@ -149,7 +159,7 @@
       console.warn(
         "No output dimensions provided through params dimensions?=width,height; use defaults"
       );
-      outputDimensions = [7, 5];
+      outputDimensions = [7000, 5000];
     }
 
     // Origin mode switched via searchParams if specified (default to "CENTRE")
@@ -164,7 +174,7 @@
   <title>Tracking Simulation</title>
 </svelte:head>
 
-{#if shadows.length > 0}
+{#if ((shadows.length > 0) && (mode == "mouse"))}
 <div class="delete-area">
   {#each shadows as shadow (shadow.uuid)}
   <div in:fade out:fade>
@@ -238,6 +248,9 @@
         initY={shadow.y}
         onPointerUp={async () => {
           await publishUpdate();
+          if (mode=="touch") {
+            deleteShadow(shadow.uuid);
+          }
         }}
         onPointerMove={async (x, y) => {
           shadow.x = x;
