@@ -86,6 +86,7 @@
   const deleteShadow = (uuid:number) => {
     console.log("Deleting: ", uuid);
     shadows = [...shadows.filter((s) => s.uuid !== uuid)];
+    publishUpdate();
   }
 
   const roundValue = (value: number, digits:number) => {
@@ -100,10 +101,10 @@
         const range = getRangeFromOrigin(x, y);
         const trackedPoint: TrackedPoint = {
           id: shadow.uuid,
-          x: roundValue(x, 2),
-          y: roundValue(y, 2),
-          bearing: roundValue(bearing, 2),
-          range: roundValue(range, 2),
+          x: roundValue(x, 0),
+          y: roundValue(y, 0),
+          bearing: roundValue(bearing, 0),
+          range: roundValue(range, 0),
         };
         return trackedPoint;
       });
