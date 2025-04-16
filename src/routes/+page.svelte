@@ -40,7 +40,11 @@
   let agent: TetherAgent | null = $state(null);
   let outputPlug: OutputPlug | null = $state(null);
 
-  let mode: string | null = $state("mouse");
+  let modeControl: "mouse" | "touch" | null = $state("mouse");
+  let modeSending: "auto" | "onMove" | null = $state("auto");
+  let intervalId: number | undefined = undefined;
+
+  const delayAutoInterval: number = 100;
 
   const remapCoordsFromOrigin = (inC: [number, number]): [number, number] => {
     if (!inputDimensions || !outputDimensions) {
@@ -108,8 +112,21 @@
         };
         return trackedPoint;
       });
-      if (outputPlug) {
-        outputPlug.publish(encode(outputPoints));
+      if (modeSending == "auto") {
+        if (intervalId != undefined) {
+          clearInterval(intervalId);
+        }
+        if (outputPlug) {
+          outputPlug?.publish(encode(outputPoints));
+          intervalId = setInterval(() => {
+            outputPlug?.publish(encode(outputPoints));
+          }, delayAutoInterval);
+        }
+      }
+      else {
+        if (outputPlug) {
+          outputPlug?.publish(encode(outputPoints));
+        }
       }
     }
   };
@@ -128,13 +145,23 @@
 
     // Some things defined (optionally) via searchParams...
     const params = new URL(document.location.toString()).searchParams;
-    mode = params.get("mode");
-    if ((mode == "touch") || (mode == "mouse")) {
-      console.log("Using mode: ", mode);
+    // Set up the control mode (mouse/touch) via searchParams
+    modeControl = params.get("control") as "mouse" | "touch" | null;
+    if ((modeControl == "touch") || (modeControl == "mouse")) {
+      console.log("Using control mode: ", modeControl);
     }
     else {
-      console.warn("No valid mode specified, defaulting to mouse");
-      mode = "mouse";
+      console.warn("No valid control mode specified, defaulting to mouse");
+      modeControl = "mouse";
+    }
+    // Set up the sending mode (auto/onMove) via searchParams
+    modeSending = params.get("sending") as "auto" | "onMove" | null;
+    if ((modeSending == "auto") || (modeSending == "onMove")) {
+      console.log("Using sending mode: ", modeSending);
+    }
+    else {
+      console.warn("No valid sending mode specified, defaulting to mouse");
+      modeSending = "auto";
     }
     
     // Set up Tether agent using either the searchParams or current URL...
@@ -168,6 +195,8 @@
     if (originModeParams) {
       originMode = originModeParams as OriginModeEnum;
     }
+
+    publishUpdate();
   });
 </script>
 
@@ -175,7 +204,7 @@
   <title>Tracking Simulation</title>
 </svelte:head>
 
-{#if ((shadows.length > 0) && (mode == "mouse"))}
+{#if ((shadows.length > 0) && (modeControl == "mouse"))}
 <div class="delete-area">
   {#each shadows as shadow (shadow.uuid)}
   <div in:fade out:fade>
@@ -249,7 +278,7 @@
         initY={shadow.y}
         onPointerUp={async () => {
           await publishUpdate();
-          if (mode=="touch") {
+          if (modeControl=="touch") {
             deleteShadow(shadow.uuid);
           }
         }}
