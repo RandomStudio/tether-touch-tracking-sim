@@ -7,10 +7,12 @@
   import {
     BROKER_DEFAULTS,
     encode,
+    decode,
     OutputPlug,
+    InputPlug,
     TetherAgent,
   } from "tether-agent";
-  import { type TrackedPoint, type Circle, type Line } from "$lib/types";
+  import { type TrackedPoint, type Circle, type Line, type Shape } from "$lib/types";
   import { remap, remapCoords } from "@anselan/maprange";
   import { getBearing, getRangeFromOrigin } from "$lib";
 
@@ -41,13 +43,13 @@
 
   let agent: TetherAgent | null = $state(null);
   let outputPlug: OutputPlug | null = $state(null);
+  let shapesPlug: InputPlug | null = $state(null);
 
   let modeControl: "mouse" | "touch" | null = $state("mouse");
   let modeSending: "auto" | "onMove" | null = $state("auto");
   let intervalId: number | undefined = undefined;
 
-  let circles: Circle[] = $state([]);
-  let lines: Line[] = $state([]);
+  let shapes: Shape[] = $state([]);
 
   const delayAutoInterval: number = 100;
 
@@ -219,8 +221,9 @@
       },
     });
 
-    // Also set up the Output Plug now...
+    // Also set up the Output and Input Plug now...
     outputPlug = new OutputPlug(agent, "smoothedTrackedPoints");
+    shapesPlug = await InputPlug.create(agent, "shapesArea");
 
     // Output dimensions set up via searchParams, or fall back to defaults...
     const dimensionsParams = params.get("dimensions");
@@ -242,47 +245,52 @@
       originMode = originModeParams as OriginModeEnum;
     }
 
-    circles = [...circles, ({ center: {x:-2800, y:2000}, detectionRange: 1000} as Circle)];
-    circles = [...circles, ({ center: {x:2100, y:-1500}, detectionRange: 500} as Circle)];
-    circles = circles.map((circle) => {
-      const [x, y] = remapCoordsFromOriginReverse([circle.center.x, circle.center.y]);
-      let range = 0;
-      if (outputDimensions && inputDimensions) {
-        range = remapCoords([circle.detectionRange, circle.detectionRange], outputDimensions, inputDimensions)[0];
-      }
-      return {
-        center: { x, y },
-        detectionRange: range,
-      } as Circle;
-    });
-
-    lines = [...lines, ({from: {
-                          x: -500,
-                          y: -2500,
-                        },
-                        to: {
-                          x: 500,
-                          y: 2500,
-                        },
-                        thickness: 400} as Line)]
-      lines = lines.map((line) => {
-        const [fromX, fromY] = remapCoordsFromOriginReverse([line.from.x, line.from.y]);
-        const [toX, toY] = remapCoordsFromOriginReverse([line.to.x, line.to.y]);
-        let thickness = 0;
-        if (outputDimensions && inputDimensions) {
-          thickness = remapCoords([line.thickness, line.thickness], outputDimensions, inputDimensions)[0];
+    shapesPlug.on("message", async (payload) => {
+      shapes = [...decode(payload) as Shape[]];
+      shapes = shapes.map((shape) => {
+        switch(shape.type) {
+          case "Circle": {
+            const circle = shape.shape as Circle;
+            const [x, y] = remapCoordsFromOriginReverse([circle.center.x, circle.center.y]);
+            let range = 0;
+            if (outputDimensions && inputDimensions) {
+              range = remapCoords([circle.detectionRange, circle.detectionRange], outputDimensions, inputDimensions)[0];
+            }
+            const newCircle = {
+              center: { x, y },
+              detectionRange: range,
+            } as Circle
+            return {
+              type: shape.type,
+              shape: newCircle,
+            };
+          }
+          case "Line": {
+            const line = shape.shape as Line;
+            const [fromX, fromY] = remapCoordsFromOriginReverse([line.from.x, line.from.y]);
+          const [toX, toY] = remapCoordsFromOriginReverse([line.to.x, line.to.y]);
+          let thickness = 0;
+          if (outputDimensions && inputDimensions) {
+            thickness = remapCoords([line.thickness, line.thickness], outputDimensions, inputDimensions)[0];
+          }
+          const newLine = {
+            from: {
+              x: fromX,
+              y: fromY,
+            },
+            to: {
+              x: toX,
+              y: toY, 
+            },
+            thickness: thickness,
+          } as Line;
+            return {
+              type: shape.type,
+              shape: newLine,
+            };
+          }
         }
-        return {
-          from: {
-            x: fromX,
-            y: fromY,
-          },
-          to: {
-            x: toX,
-            y: toY, 
-          },
-          thickness: thickness,
-        } as Line;
+      });
     });
 
     publishUpdate();
@@ -358,19 +366,19 @@
     </div>
   {/if}
   
-  {#each circles as circle}
+  {#each shapes as shape}
+  {#if shape.type=="Circle"}
     <CircleComponent
-    center={circle.center}
-    detectionRange={circle.detectionRange}
+    center={(shape.shape as Circle).center}
+    detectionRange={(shape.shape as Circle).detectionRange}
   />
-  {/each}
-
-  {#each lines as line}
-    <LineComponent
-    from={line.from}
-    to={line.to}
-    thickness={line.thickness}
+  {:else if shape.type=="Line"}
+  <LineComponent
+    from={(shape.shape as Line).from}
+    to={(shape.shape as Line).to}
+    thickness={(shape.shape as Line).thickness}
   />
+  {/if}
   {/each}
 
   {#each shadows as shadow (shadow.uuid)}

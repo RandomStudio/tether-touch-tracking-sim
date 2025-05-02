@@ -26,3 +26,8 @@ export interface Line {
   };
   thickness: number;
 }
+
+export interface Shape {
+  type: "Circle" | "Line";
+  shape: Circle | Line;
+}
