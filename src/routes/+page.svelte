@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Shadow from "./Shadow.svelte";
+  import CircleComponent from "./shapes/CircleComponent.svelte";
+  import LineComponent from "./shapes/LineComponent.svelte";
   import { fade } from "svelte/transition";
   import {
     BROKER_DEFAULTS,
@@ -8,7 +10,7 @@
     OutputPlug,
     TetherAgent,
   } from "tether-agent";
-  import { type TrackedPoint } from "$lib/types";
+  import { type TrackedPoint, type Circle, type Line } from "$lib/types";
   import { remap, remapCoords } from "@anselan/maprange";
   import { getBearing, getRangeFromOrigin } from "$lib";
 
@@ -43,6 +45,9 @@
   let modeControl: "mouse" | "touch" | null = $state("mouse");
   let modeSending: "auto" | "onMove" | null = $state("auto");
   let intervalId: number | undefined = undefined;
+
+  let circles: Circle[] = $state([]);
+  let lines: Line[] = $state([]);
 
   const delayAutoInterval: number = 100;
 
@@ -81,6 +86,47 @@
             inY,
             [0, inputDimensions[1]],
             [outputDimensions[1] / 2, -outputDimensions[1] / 2]
+          ),
+        ];
+      }
+    }
+  };
+
+  const remapCoordsFromOriginReverse = (inC: [number, number]): [number, number] => {
+    if (!inputDimensions || !outputDimensions) {
+      throw Error("input and/or output dimensions not set");
+    }
+    const [inX, inY] = inC;
+    switch (originMode) {
+      case "CORNER": {
+        const [x, y] = remapCoords(
+          [inX, inY],
+          outputDimensions,
+          inputDimensions,
+        );
+        return [x, y];
+      }
+      case "CLOSE_CENTRE": {
+        return [
+          remap(
+            inX,
+            [outputDimensions[0] / 2, -outputDimensions[0] / 2],
+            [0, inputDimensions[0]]
+          ),
+          remap(inY, [0, outputDimensions[1]], [0, inputDimensions[1]],),
+        ];
+      }
+      case "CENTRE": {
+        return [
+          remap(
+            inX,
+            [-outputDimensions[0] / 2, outputDimensions[0] / 2],
+            [0, inputDimensions[0]],
+          ),
+          remap(
+            inY,
+            [outputDimensions[1] / 2, -outputDimensions[1] / 2],
+            [0, inputDimensions[1]],
           ),
         ];
       }
@@ -196,6 +242,49 @@
       originMode = originModeParams as OriginModeEnum;
     }
 
+    circles = [...circles, ({ center: {x:-2800, y:2000}, detectionRange: 1000} as Circle)];
+    circles = [...circles, ({ center: {x:2100, y:-1500}, detectionRange: 500} as Circle)];
+    circles = circles.map((circle) => {
+      const [x, y] = remapCoordsFromOriginReverse([circle.center.x, circle.center.y]);
+      let range = 0;
+      if (outputDimensions && inputDimensions) {
+        range = remapCoords([circle.detectionRange, circle.detectionRange], outputDimensions, inputDimensions)[0];
+      }
+      return {
+        center: { x, y },
+        detectionRange: range,
+      } as Circle;
+    });
+
+    lines = [...lines, ({from: {
+                          x: -500,
+                          y: -2500,
+                        },
+                        to: {
+                          x: 500,
+                          y: 2500,
+                        },
+                        thickness: 400} as Line)]
+      lines = lines.map((line) => {
+        const [fromX, fromY] = remapCoordsFromOriginReverse([line.from.x, line.from.y]);
+        const [toX, toY] = remapCoordsFromOriginReverse([line.to.x, line.to.y]);
+        let thickness = 0;
+        if (outputDimensions && inputDimensions) {
+          thickness = remapCoords([line.thickness, line.thickness], outputDimensions, inputDimensions)[0];
+        }
+        return {
+          from: {
+            x: fromX,
+            y: fromY,
+          },
+          to: {
+            x: toX,
+            y: toY, 
+          },
+          thickness: thickness,
+        } as Line;
+    });
+
     publishUpdate();
   });
 </script>
@@ -268,6 +357,21 @@
       <div>+</div>
     </div>
   {/if}
+  
+  {#each circles as circle}
+    <CircleComponent
+    center={circle.center}
+    detectionRange={circle.detectionRange}
+  />
+  {/each}
+
+  {#each lines as line}
+    <LineComponent
+    from={line.from}
+    to={line.to}
+    thickness={line.thickness}
+  />
+  {/each}
 
   {#each shadows as shadow (shadow.uuid)}
     <div transition:fade>
