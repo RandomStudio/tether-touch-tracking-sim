@@ -249,24 +249,23 @@
       shapes = [...decode(payload) as Shape[]];
       shapes = shapes.map((shape) => {
         switch(shape.type) {
-          case "Circle": {
-            const circle = shape.shape as Circle;
+          case "circle": {
+            const circle = shape as Circle;
             const [x, y] = remapCoordsFromOriginReverse([circle.center.x, circle.center.y]);
             let range = 0;
             if (outputDimensions && inputDimensions) {
               range = remapCoords([circle.detectionRange, circle.detectionRange], outputDimensions, inputDimensions)[0];
             }
             const newCircle = {
+              id: shape.id,
+              type: 'circle',
               center: { x, y },
               detectionRange: range,
             } as Circle
-            return {
-              type: shape.type,
-              shape: newCircle,
-            };
+            return newCircle;
           }
-          case "Line": {
-            const line = shape.shape as Line;
+          case "line": {
+            const line = shape as Line;
             const [fromX, fromY] = remapCoordsFromOriginReverse([line.from.x, line.from.y]);
           const [toX, toY] = remapCoordsFromOriginReverse([line.to.x, line.to.y]);
           let thickness = 0;
@@ -274,6 +273,8 @@
             thickness = remapCoords([line.thickness, line.thickness], outputDimensions, inputDimensions)[0];
           }
           const newLine = {
+            id: shape.id,
+            type: 'line',
             from: {
               x: fromX,
               y: fromY,
@@ -284,13 +285,11 @@
             },
             thickness: thickness,
           } as Line;
-            return {
-              type: shape.type,
-              shape: newLine,
-            };
+            return newLine;
           }
         }
       });
+      console.log(shapes);
     });
 
     publishUpdate();
@@ -367,16 +366,20 @@
   {/if}
   
   {#each shapes as shape}
-  {#if shape.type=="Circle"}
+  {#if shape.type=="circle"}
     <CircleComponent
-    center={(shape.shape as Circle).center}
-    detectionRange={(shape.shape as Circle).detectionRange}
+    id={shape.id}
+    type={shape.type}
+    center={(shape as Circle).center}
+    detectionRange={(shape as Circle).detectionRange}
   />
-  {:else if shape.type=="Line"}
+  {:else if shape.type=="line"}
   <LineComponent
-    from={(shape.shape as Line).from}
-    to={(shape.shape as Line).to}
-    thickness={(shape.shape as Line).thickness}
+    id={shape.id}
+    type={shape.type}
+    from={(shape as Line).from}
+    to={(shape as Line).to}
+    thickness={(shape as Line).thickness}
   />
   {/if}
   {/each}

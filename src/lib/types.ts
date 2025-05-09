@@ -7,15 +7,21 @@ export interface TrackedPoint {
   range?: number;
 }
 
-export interface Circle {
+export interface BasicShape {
+  id: number;
+  type: string;
+}
+
+export interface Circle extends BasicShape {
+  type: "circle";
   center: {
     x: number;
     y: number;
   };
   detectionRange: number;
 }
-
-export interface Line {
+export interface Line extends BasicShape {
+  type: "line";
   from: {
     x: number;
     y: number;
@@ -27,7 +33,4 @@ export interface Line {
   thickness: number;
 }
 
-export interface Shape {
-  type: "Circle" | "Line";
-  shape: Circle | Line;
-}
+export type Shape = Circle | Line;
