@@ -13,8 +13,8 @@
 	class="circle"
 	style:left={x + 'px'}
 	style:top={y + 'px'}
-	style:width={range + 'px'}
-	style:height={range + 'px'}
+	style:width={range*2 + 'px'}
+	style:height={range*2 + 'px'}
 >
 </div>
 

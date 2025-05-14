@@ -236,7 +236,7 @@
       console.warn(
         "No output dimensions provided through params dimensions?=width,height; use defaults"
       );
-      outputDimensions = [7000, 5000];
+      outputDimensions = [6000, 4500];
     }
 
     // Origin mode switched via searchParams if specified (default to "CENTRE")
