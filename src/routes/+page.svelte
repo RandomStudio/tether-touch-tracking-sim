@@ -158,7 +158,6 @@
           bearing: roundValue(bearing, 0),
           range: roundValue(range, 0),
         };
-        console.log("Tracked point: ", trackedPoint);
         return trackedPoint;
       });
       if (modeSending == "auto") {
