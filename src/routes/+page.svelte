@@ -65,7 +65,7 @@
           inputDimensions,
           outputDimensions
         );
-        return [x, y];
+        return [x, outputDimensions[1] - y];
       }
       case "CLOSE_CENTRE": {
         return [
@@ -106,7 +106,7 @@
           outputDimensions,
           inputDimensions,
         );
-        return [x, y];
+        return [x, inputDimensions[1] - y];
       }
       case "CLOSE_CENTRE": {
         return [
@@ -158,6 +158,7 @@
           bearing: roundValue(bearing, 0),
           range: roundValue(range, 0),
         };
+        console.log("Tracked point: ", trackedPoint);
         return trackedPoint;
       });
       if (modeSending == "auto") {
@@ -364,7 +365,7 @@
       style:left={(originMode === OriginMode.CORNER
         ? "0"
         : inputDimensions[0] / 2) + "px"}
-      style:top={(originMode === OriginMode.CORNER ? "0" : inputDimensions[1] / 2) +
+      style:top={(originMode === OriginMode.CORNER ? inputDimensions[1] : inputDimensions[1] / 2) +
         "px"}
     >
       <div>+</div>
