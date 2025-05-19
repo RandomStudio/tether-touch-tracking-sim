@@ -32,7 +32,7 @@
 
   let index = $state(0);
 
-  let originMode: OriginModeEnum = $state(OriginMode.CENTRE);
+  let originMode: OriginModeEnum = $state(OriginMode.CORNER);
   let outputDimensions: null | [number, number] = $state(null);
   let inputDimensions: null | [number, number] = $state(null);
 
@@ -180,16 +180,6 @@
   };
 
   onMount(async () => {
-    // Input dimensions by window pixel size on mount...
-    // (Careful: browser zoom level can mess this up a bit)
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    if (width>height) {
-      width = Math.round(1.4 * height);
-    } else {
-      height = Math.round(width / 1.4);
-    }
-    inputDimensions = [width, height];
 
     // Some things defined (optionally) via searchParams...
     const params = new URL(document.location.toString()).searchParams;
@@ -236,13 +226,29 @@
       console.warn(
         "No output dimensions provided through params dimensions?=width,height; use defaults"
       );
-      outputDimensions = [6000, 4500];
+      outputDimensions = [4500, 6000];
     }
+
+    // Input dimensions by window pixel size on mount...
+    // (Careful: browser zoom level can mess this up a bit)
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    const coef = outputDimensions[1] / outputDimensions[0];
+    if (width>height) {
+      width = Math.round(height/coef);
+    } else {
+      height = Math.round(width * coef);
+    }
+    inputDimensions = [width, height];
 
     // Origin mode switched via searchParams if specified (default to "CENTRE")
     const originModeParams = params.get("origin");
     if (originModeParams) {
       originMode = originModeParams as OriginModeEnum;
+    }
+    if (originMode !== OriginMode.CORNER && originMode !== OriginMode.CLOSE_CENTRE && originMode !== OriginMode.CENTRE) {
+      console.warn("No valid origin mode specified, use default CORNER");
+      originMode = OriginMode.CORNER;
     }
 
     shapesPlug.on("message", async (payload) => {
@@ -358,7 +364,7 @@
       style:left={(originMode === OriginMode.CORNER
         ? "0"
         : inputDimensions[0] / 2) + "px"}
-      style:top={(originMode.includes("TOP") ? "0" : inputDimensions[1] / 2) +
+      style:top={(originMode === OriginMode.CORNER ? "0" : inputDimensions[1] / 2) +
         "px"}
     >
       <div>+</div>
