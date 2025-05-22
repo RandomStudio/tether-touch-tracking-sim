@@ -12,7 +12,12 @@
     InputPlug,
     TetherAgent,
   } from "tether-agent";
-  import { type TrackedPoint, type Circle, type Line, type Shape } from "$lib/types";
+  import {
+    type TrackedPoint,
+    type Circle,
+    type Line,
+    type Shape,
+  } from "$lib/types";
   import { remap, remapCoords } from "@anselan/maprange";
   import { getBearing, getRangeFromOrigin } from "$lib";
 
@@ -30,7 +35,7 @@
   } as const;
   type OriginModeEnum = (typeof OriginMode)[keyof typeof OriginMode];
 
-  let index = $state(0);
+  let index = $state(1);
 
   let originMode: OriginModeEnum = $state(OriginMode.CORNER);
   let outputDimensions: null | [number, number] = $state(null);
@@ -94,7 +99,9 @@
     }
   };
 
-  const remapCoordsFromOriginReverse = (inC: [number, number]): [number, number] => {
+  const remapCoordsFromOriginReverse = (
+    inC: [number, number]
+  ): [number, number] => {
     if (!inputDimensions || !outputDimensions) {
       throw Error("input and/or output dimensions not set");
     }
@@ -104,7 +111,7 @@
         const [x, y] = remapCoords(
           [inX, inY],
           outputDimensions,
-          inputDimensions,
+          inputDimensions
         );
         return [x, inputDimensions[1] - y];
       }
@@ -115,7 +122,7 @@
             [outputDimensions[0] / 2, -outputDimensions[0] / 2],
             [0, inputDimensions[0]]
           ),
-          remap(inY, [0, outputDimensions[1]], [0, inputDimensions[1]],),
+          remap(inY, [0, outputDimensions[1]], [0, inputDimensions[1]]),
         ];
       }
       case "CENTRE": {
@@ -123,27 +130,32 @@
           remap(
             inX,
             [-outputDimensions[0] / 2, outputDimensions[0] / 2],
-            [0, inputDimensions[0]],
+            [0, inputDimensions[0]]
           ),
           remap(
             inY,
             [outputDimensions[1] / 2, -outputDimensions[1] / 2],
-            [0, inputDimensions[1]],
+            [0, inputDimensions[1]]
           ),
         ];
       }
     }
   };
 
-  const deleteShadow = (uuid:number) => {
+  const deleteShadow = (uuid: number) => {
     console.log("Deleting: ", uuid);
     shadows = [...shadows.filter((s) => s.uuid !== uuid)];
+    let newIndex = 1;
+    while (shadows.some((s) => s.uuid === newIndex)) {
+      newIndex++;
+    }
+    index = newIndex;
     publishUpdate();
-  }
+  };
 
-  const roundValue = (value: number, digits:number) => {
-    return Math.round(value * (10**digits)) / (10**digits);
-  }
+  const roundValue = (value: number, digits: number) => {
+    return Math.round(value * 10 ** digits) / 10 ** digits;
+  };
 
   const publishUpdate = () => {
     if (inputDimensions && outputDimensions) {
@@ -170,8 +182,7 @@
             outputPlug?.publish(encode(outputPoints));
           }, delayAutoInterval);
         }
-      }
-      else {
+      } else {
         if (outputPlug) {
           outputPlug?.publish(encode(outputPoints));
         }
@@ -180,28 +191,25 @@
   };
 
   onMount(async () => {
-
     // Some things defined (optionally) via searchParams...
     const params = new URL(document.location.toString()).searchParams;
     // Set up the control mode (mouse/touch) via searchParams
     modeControl = params.get("control") as "mouse" | "touch" | null;
-    if ((modeControl == "touch") || (modeControl == "mouse")) {
+    if (modeControl == "touch" || modeControl == "mouse") {
       console.log("Using control mode: ", modeControl);
-    }
-    else {
+    } else {
       console.warn("No valid control mode specified, defaulting to mouse");
       modeControl = "mouse";
     }
     // Set up the sending mode (auto/onMove) via searchParams
     modeSending = params.get("sending") as "auto" | "onMove" | null;
-    if ((modeSending == "auto") || (modeSending == "onMove")) {
+    if (modeSending == "auto" || modeSending == "onMove") {
       console.log("Using sending mode: ", modeSending);
-    }
-    else {
+    } else {
       console.warn("No valid sending mode specified, defaulting to mouse");
       modeSending = "auto";
     }
-    
+
     // Set up Tether agent using either the searchParams or current URL...
     const tetherHostParams = params.get("tetherHost");
     agent = await TetherAgent.create("displays", {
@@ -234,8 +242,8 @@
     let width = window.innerWidth;
     let height = window.innerHeight;
     const coef = outputDimensions[1] / outputDimensions[0];
-    if (width>height) {
-      width = Math.round(height/coef);
+    if (width > height) {
+      width = Math.round(height / coef);
     } else {
       height = Math.round(width * coef);
     }
@@ -246,51 +254,72 @@
     if (originModeParams) {
       originMode = originModeParams as OriginModeEnum;
     }
-    if (originMode !== OriginMode.CORNER && originMode !== OriginMode.CLOSE_CENTRE && originMode !== OriginMode.CENTRE) {
+    if (
+      originMode !== OriginMode.CORNER &&
+      originMode !== OriginMode.CLOSE_CENTRE &&
+      originMode !== OriginMode.CENTRE
+    ) {
       console.warn("No valid origin mode specified, use default CORNER");
       originMode = OriginMode.CORNER;
     }
 
     shapesPlug.on("message", async (payload) => {
-      shapes = [...decode(payload) as Shape[]];
+      shapes = [...(decode(payload) as Shape[])];
       shapes = shapes.map((shape) => {
-        switch(shape.type) {
+        switch (shape.type) {
           case "circle": {
             const circle = shape as Circle;
-            const [x, y] = remapCoordsFromOriginReverse([circle.center.x, circle.center.y]);
+            const [x, y] = remapCoordsFromOriginReverse([
+              circle.center.x,
+              circle.center.y,
+            ]);
             let range = 0;
             if (outputDimensions && inputDimensions) {
-              range = remapCoords([circle.detectionRange, circle.detectionRange], outputDimensions, inputDimensions)[0];
+              range = remapCoords(
+                [circle.detectionRange, circle.detectionRange],
+                outputDimensions,
+                inputDimensions
+              )[0];
             }
             const newCircle = {
               id: shape.id,
-              type: 'circle',
+              type: "circle",
               center: { x, y },
               detectionRange: range,
-            } as Circle
+            } as Circle;
             return newCircle;
           }
           case "line": {
             const line = shape as Line;
-            const [fromX, fromY] = remapCoordsFromOriginReverse([line.from.x, line.from.y]);
-          const [toX, toY] = remapCoordsFromOriginReverse([line.to.x, line.to.y]);
-          let thickness = 0;
-          if (outputDimensions && inputDimensions) {
-            thickness = remapCoords([line.thickness, line.thickness], outputDimensions, inputDimensions)[0];
-          }
-          const newLine = {
-            id: shape.id,
-            type: 'line',
-            from: {
-              x: fromX,
-              y: fromY,
-            },
-            to: {
-              x: toX,
-              y: toY, 
-            },
-            thickness: thickness,
-          } as Line;
+            const [fromX, fromY] = remapCoordsFromOriginReverse([
+              line.from.x,
+              line.from.y,
+            ]);
+            const [toX, toY] = remapCoordsFromOriginReverse([
+              line.to.x,
+              line.to.y,
+            ]);
+            let thickness = 0;
+            if (outputDimensions && inputDimensions) {
+              thickness = remapCoords(
+                [line.thickness, line.thickness],
+                outputDimensions,
+                inputDimensions
+              )[0];
+            }
+            const newLine = {
+              id: shape.id,
+              type: "line",
+              from: {
+                x: fromX,
+                y: fromY,
+              },
+              to: {
+                x: toX,
+                y: toY,
+              },
+              thickness: thickness,
+            } as Line;
             return newLine;
           }
         }
@@ -306,18 +335,18 @@
   <title>Tracking Simulation</title>
 </svelte:head>
 
-{#if ((shadows.length > 0) && (modeControl == "mouse"))}
-<div class="delete-area">
-  {#each shadows as shadow (shadow.uuid)}
-  <div in:fade out:fade>
-    <button class="delete-btn" onclick={() => deleteShadow(shadow.uuid)}>
-      {shadow.uuid}
-    </button>
-    <br />
-    <br />
+{#if shadows.length > 0 && modeControl == "mouse"}
+  <div class="delete-area">
+    {#each shadows as shadow (shadow.uuid)}
+      <div in:fade out:fade>
+        <button class="delete-btn" onclick={() => deleteShadow(shadow.uuid)}>
+          {shadow.uuid}
+        </button>
+        <br />
+        <br />
+      </div>
+    {/each}
   </div>
-  {/each}
-</div>
 {/if}
 
 <div class="container">
@@ -364,30 +393,31 @@
       style:left={(originMode === OriginMode.CORNER
         ? "0"
         : inputDimensions[0] / 2) + "px"}
-      style:top={(originMode === OriginMode.CORNER ? inputDimensions[1] : inputDimensions[1] / 2) +
-        "px"}
+      style:top={(originMode === OriginMode.CORNER
+        ? inputDimensions[1]
+        : inputDimensions[1] / 2) + "px"}
     >
       <div>+</div>
     </div>
   {/if}
-  
+
   {#each shapes as shape}
-  {#if shape.type=="circle"}
-    <CircleComponent
-    id={shape.id}
-    type={shape.type}
-    center={(shape as Circle).center}
-    detectionRange={(shape as Circle).detectionRange}
-  />
-  {:else if shape.type=="line"}
-  <LineComponent
-    id={shape.id}
-    type={shape.type}
-    from={(shape as Line).from}
-    to={(shape as Line).to}
-    thickness={(shape as Line).thickness}
-  />
-  {/if}
+    {#if shape.type == "circle"}
+      <CircleComponent
+        id={shape.id}
+        type={shape.type}
+        center={(shape as Circle).center}
+        detectionRange={(shape as Circle).detectionRange}
+      />
+    {:else if shape.type == "line"}
+      <LineComponent
+        id={shape.id}
+        type={shape.type}
+        from={(shape as Line).from}
+        to={(shape as Line).to}
+        thickness={(shape as Line).thickness}
+      />
+    {/if}
   {/each}
 
   {#each shadows as shadow (shadow.uuid)}
@@ -399,7 +429,7 @@
         initY={shadow.y}
         onPointerUp={async () => {
           await publishUpdate();
-          if (modeControl=="touch") {
+          if (modeControl == "touch") {
             deleteShadow(shadow.uuid);
           }
         }}
